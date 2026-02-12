@@ -3,6 +3,7 @@ import secrets
 import string
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 LOWER_ASCII_CHARACTERS = string.ascii_lowercase
@@ -36,8 +37,11 @@ async def print_url(short_code: str):
     with open("links.json", "r") as f:
         links = json.load(f)
     if short_code in links.keys():
-        print(f"Found: {links[short_code]}")
-        return links[short_code]
+        url = links[short_code]
+        print(f"Found: {url}")
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
+        return RedirectResponse(url=url)
     else:
         return f"NOT FOUND!!!"
 

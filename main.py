@@ -32,7 +32,7 @@ def read_root():
     return links
 
 
-@app.get("/url/{short_code}")
+@app.get("/{short_code}")
 async def print_url(short_code: str):
     with open("links.json", "r") as f:
         links = json.load(f)
@@ -46,7 +46,7 @@ async def print_url(short_code: str):
         return f"NOT FOUND!!!"
 
 
-@app.post("/url/")
+@app.post("/")
 async def post_url(long_url: Link):
     print(f"{long_url.url} is recieved!!!")
     with open("links.json", "r") as f:

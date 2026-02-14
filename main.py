@@ -1,4 +1,3 @@
-import json
 import secrets
 import string
 
@@ -7,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+from db import get_connection, init_db
 
 LOWER_ASCII_CHARACTERS = string.ascii_lowercase
 UPPER_ASCII_CHARACTERS = string.ascii_uppercase
@@ -21,6 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
+init_db()
 
 
 class Link(BaseModel):
@@ -37,37 +39,53 @@ def generate_short_code():
 
 @app.get("/")
 def read_root():
-    with open("links.json", "r") as f:
-        links = json.load(f)
-    return links
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("select * from links")
+    rows = cursor.fetchall()
+    if rows:
+        links = {row["short_code"]: row["url"] for row in rows}
+        conn.close()
+        return links
+    else:
+        return "NOT FOUND!!"
 
 
 @app.get("/{short_code}")
 async def print_url(short_code: str):
-    with open("links.json", "r") as f:
-        links = json.load(f)
-    if short_code in links.keys():
-        url = links[short_code]
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("select url from links where short_code = ?", (short_code,))
+    row = cursor.fetchone()
+    if row:
+        url = row["url"]
         print(f"Found: {url}")
         if not url.startswith(("http://", "https://")):
             url = "https://" + url
+        conn.close()
         return RedirectResponse(url=url)
     else:
-        return f"NOT FOUND!!!"
+        conn.close()
+        return {}
 
 
 @app.post("/")
-async def post_url(long_url: Link):
-    print(f"{long_url.url} is recieved!!!")
-    with open("links.json", "r") as f:
-        links = json.load(f)
-    for short_code, url in links.items():
-        if url == long_url.url:
-            long_url.short_code = short_code
-            return long_url
-
-    long_url.short_code = generate_short_code()
-    links[long_url.short_code] = long_url.url
-    with open("links.json", "w") as f:
-        json.dump(links, f, indent=2)
-    return long_url
+async def post_url(link: Link):
+    print(f"{link.url} is recieved!!!")
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("select short_code from links where url = ?", (link.url,))
+    row = cursor.fetchone()
+    if row:
+        link.short_code = row["short_code"]
+        conn.close()
+        return link
+    else:
+        link.short_code = generate_short_code()
+        cursor.execute(
+            "insert into links (short_code, url) values (?,?)",
+            (link.short_code, link.url),
+        )
+        conn.commit()
+        conn.close()
+        return link

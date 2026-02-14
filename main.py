@@ -39,6 +39,11 @@ def generate_short_code():
 
 @app.get("/")
 def read_root():
+    return RedirectResponse(url="/static/index.html")
+
+
+@app.get("/api/links")
+def get_all_links():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("select * from links")

@@ -8,7 +8,7 @@ async function shortenUrl() {
 	});
 
 	const data = await response.json();
-	const shortUrl = `http://localhost:8000/${data.short_code}`;
+	const shortUrl = `${window.location.origin}/${data.short_code}`;
 	const longUrl = `https://${data.url}`;
 
 	document.getElementById('result').innerHTML =

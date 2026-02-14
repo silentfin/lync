@@ -1,7 +1,7 @@
 async function shortenUrl() {
 	const url = document.getElementById('urlInput').value;
 
-	const response = await fetch('http://localhost:8000/', {
+	const response = await fetch('/', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ url: url })
@@ -12,6 +12,6 @@ async function shortenUrl() {
 	const longUrl = `https://${data.url}`;
 
 	document.getElementById('result').innerHTML =
-		 `Long URL: <a href="${longUrl}">${longUrl}</a><br>
+		`Long URL: <a href="${longUrl}">${longUrl}</a><br>
 		 Short URL: <a href="${shortUrl}">${shortUrl}</a>`;
 }

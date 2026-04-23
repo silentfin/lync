@@ -10,14 +10,13 @@ def get_connection():
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS links(
     short_code TEXT PRIMARY KEY,
     url TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP   
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    click_count INTEGER DEFAULT 0
     )
-    """
-    )
+    """)
     conn.commit()
     conn.close()

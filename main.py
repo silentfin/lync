@@ -49,7 +49,14 @@ def get_all_links():
     cursor.execute("select * from links")
     rows = cursor.fetchall()
     if rows:
-        links = {row["short_code"]: row["url"] for row in rows}
+        links = {
+            row["short_code"]: {
+                "url": row["url"],
+                "created_at": row["created_at"],
+                "click_count": row["click_count"],
+            }
+            for row in rows
+        }
         conn.close()
         return links
     else:
@@ -64,6 +71,11 @@ async def print_url(short_code: str):
     row = cursor.fetchone()
     if row:
         url = row["url"]
+        cursor.execute(
+            "UPDATE links SET click_count = click_count + 1 WHERE short_code = ?",
+            (short_code,),
+        )
+        conn.commit()
         print(f"Found: {url}")
         if not url.startswith(("http://", "https://")):
             url = "https://" + url

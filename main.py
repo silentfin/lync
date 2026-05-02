@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel, field_validator
 
 from db import get_connection, init_db
 
@@ -27,15 +27,29 @@ init_db()
 
 
 class Link(BaseModel):
-    url: str
+    url: AnyHttpUrl
     short_code: str | None = None
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def add_https(cls, v):
+        if isinstance(v, str) and "://" not in v:
+            return f"https://{v}"
+        return v
 
 
 def generate_short_code():
-    return "".join(
-        secrets.choice(LOWER_ASCII_CHARACTERS + UPPER_ASCII_CHARACTERS + DIGITS)
-        for _ in range(5)
-    )
+    conn = get_connection()
+    cursor = conn.cursor()
+    while True:
+        code = "".join(
+            secrets.choice(LOWER_ASCII_CHARACTERS + UPPER_ASCII_CHARACTERS + DIGITS)
+            for _ in range(5)
+        )
+        cursor.execute("select 1 from links where short_code = ?", (code,))
+        if not cursor.fetchone():
+            conn.close()
+            return code
 
 
 @app.get("/")
@@ -78,8 +92,6 @@ async def print_url(short_code: str):
         )
         conn.commit()
         print(f"Found: {url}")
-        if not url.startswith(("http://", "https://")):
-            url = "https://" + url
         conn.close()
         return RedirectResponse(url=url)
     else:
@@ -92,7 +104,10 @@ async def post_url(link: Link):
     print(f"{link.url} is recieved!!!")
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("select short_code from links where url = ?", (link.url,))
+    cursor.execute(
+        "select short_code from links where url = ?",
+        (str(link.url),),
+    )
     row = cursor.fetchone()
     if row:
         link.short_code = row["short_code"]
@@ -102,7 +117,7 @@ async def post_url(link: Link):
         link.short_code = generate_short_code()
         cursor.execute(
             "insert into links (short_code, url) values (?,?)",
-            (link.short_code, link.url),
+            (link.short_code, str(link.url)),
         )
         conn.commit()
         conn.close()

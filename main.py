@@ -2,6 +2,7 @@ import secrets
 import string
 
 from fastapi import FastAPI
+from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -60,7 +61,7 @@ def get_all_links():
         conn.close()
         return links
     else:
-        return "NOT FOUND!!"
+        return {}
 
 
 @app.get("/{short_code}")
@@ -83,7 +84,7 @@ async def print_url(short_code: str):
         return RedirectResponse(url=url)
     else:
         conn.close()
-        return {}
+        raise HTTPException(status_code=404, detail="Invalid URL")
 
 
 @app.post("/")

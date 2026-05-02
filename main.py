@@ -69,6 +69,7 @@ def get_all_links():
                 "url": row["url"],
                 "created_at": row["created_at"],
                 "click_count": row["click_count"],
+                "last_accessed_at": row["last_accessed_at"],
             }
             for row in rows
         }
@@ -87,7 +88,7 @@ async def print_url(short_code: str):
     if row:
         url = row["url"]
         cursor.execute(
-            "UPDATE links SET click_count = click_count + 1 WHERE short_code = ?",
+            "UPDATE links SET click_count = click_count + 1, last_accessed_at = CURRENT_TIMESTAMP WHERE short_code = ?",
             (short_code,),
         )
         conn.commit()

@@ -15,6 +15,7 @@ def init_db():
     short_code TEXT PRIMARY KEY,
     url TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed_at TIMESTAMP,
     click_count INTEGER DEFAULT 0
     )
     """)

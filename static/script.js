@@ -13,5 +13,6 @@ async function shortenUrl() {
 
   document.getElementById("result").innerHTML =
     `Long URL: <a href="${longUrl}">${longUrl}</a><br>
-		 Short URL: <a href="${shortUrl}">${shortUrl}</a>`;
+		 Short URL: <a href="${shortUrl}">${shortUrl}</a><br>
+		 URL stats: <a href="${shortUrl}/stats">${shortUrl}/stats</a><br>`;
 }

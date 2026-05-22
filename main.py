@@ -100,6 +100,20 @@ async def print_url(short_code: str):
         raise HTTPException(status_code=404, detail="Invalid URL")
 
 
+@app.get("/{short_code}/stats")
+async def print_url_stats(short_code: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("select * from links where short_code = ?", (short_code,))
+    row = cursor.fetchone()
+    if row:
+        conn.close()
+        return row
+    else:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Invalid URL")
+
+
 @app.post("/")
 async def post_url(link: Link):
     print(f"{link.url} is recieved!!!")

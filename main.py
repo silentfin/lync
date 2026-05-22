@@ -4,7 +4,7 @@ import string
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import AnyHttpUrl, BaseModel, field_validator
 
@@ -54,7 +54,7 @@ def generate_short_code():
 
 @app.get("/")
 def read_root():
-    return RedirectResponse(url="/static/index.html")
+    return FileResponse("static/index.html")
 
 
 @app.get("/api/links")

@@ -1,19 +1,17 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+    <head>
+        <title>URL Shortener</title>
+    </head>
 
-<head>
-	<title>URL Shortener</title>
-</head>
+    <body>
+        <h1>URL Shortener</h1>
 
-<body>
-	<h1>URL Shortener</h1>
+        <input type="text" id="urlInput" placeholder="Enter URL" />
+        <button onclick="shortenUrl()">Shorten</button>
 
-	<input type="text" id="urlInput" placeholder="Enter URL">
-	<button onclick="shortenUrl()">Shorten</button>
+        <p id="result"></p>
 
-	<p id="result"></p>
-
-	<script src="script.js"></script>
-</body>
-
+        <script src="/static/script.js"></script>
+    </body>
 </html>

@@ -63,7 +63,7 @@ def read_root():
 
 
 @app.get("/api/links")
-def get_all_links():
+def list_links():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("select * from links")
@@ -85,7 +85,7 @@ def get_all_links():
 
 
 @app.get("/{short_code}")
-async def print_url(short_code: str):
+async def redirect_url(short_code: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("select url from links where short_code = ?", (short_code,))
@@ -107,7 +107,7 @@ async def print_url(short_code: str):
 
 
 @app.get("/{short_code}/stats")
-async def print_url_stats(short_code: str):
+async def get_stats(short_code: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("select * from links where short_code = ?", (short_code,))
@@ -123,7 +123,7 @@ async def print_url_stats(short_code: str):
 
 
 @app.post("/")
-async def post_url(link: Link):
+async def shorten_url(link: Link):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(

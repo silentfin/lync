@@ -1,3 +1,4 @@
+import logging
 import secrets
 import string
 
@@ -15,6 +16,8 @@ UPPER_ASCII_CHARACTERS = string.ascii_uppercase
 DIGITS = string.digits
 
 app = FastAPI()
+logger = logging.getLogger("uvicorn")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -49,11 +52,13 @@ def generate_short_code():
         cursor.execute("select 1 from links where short_code = ?", (code,))
         if not cursor.fetchone():
             conn.close()
+            logger.info(f"Generated short code: {code}")
             return code
 
 
 @app.get("/")
 def read_root():
+    logger.info("Serving index.html")
     return FileResponse("static/index.html")
 
 
@@ -92,11 +97,12 @@ async def print_url(short_code: str):
             (short_code,),
         )
         conn.commit()
-        print(f"Found: {url}")
+        logger.info(f"Update {url} click_count by 1")
         conn.close()
         return RedirectResponse(url=url)
     else:
         conn.close()
+        logger.warning(f"Short code '{short_code}' not found")
         raise HTTPException(status_code=404, detail="Invalid URL")
 
 
@@ -108,15 +114,16 @@ async def print_url_stats(short_code: str):
     row = cursor.fetchone()
     if row:
         conn.close()
+        logger.info(f"Serve {short_code} stats")
         return row
     else:
         conn.close()
+        logger.warning(f"Short code '{short_code}' not found")
         raise HTTPException(status_code=404, detail="Invalid URL")
 
 
 @app.post("/")
 async def post_url(link: Link):
-    print(f"{link.url} is recieved!!!")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -127,6 +134,8 @@ async def post_url(link: Link):
     if row:
         link.short_code = row["short_code"]
         conn.close()
+        logger.info("URL already exists")
+        logger.info(f"Existing short code returned: {link.short_code}")
         return link
     else:
         link.short_code = generate_short_code()
@@ -136,4 +145,5 @@ async def post_url(link: Link):
         )
         conn.commit()
         conn.close()
+        logger.info(f"New short code returned: {link.short_code}")
         return link

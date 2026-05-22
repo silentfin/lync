@@ -1,4 +1,7 @@
+import logging
 import sqlite3
+
+logger = logging.getLogger("uvicorn")
 
 
 def get_connection():
@@ -20,4 +23,5 @@ def init_db():
     )
     """)
     conn.commit()
+    logger.info("Initialized Database Successfully.")
     conn.close()

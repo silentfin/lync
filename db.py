@@ -1,11 +1,14 @@
 import logging
+import os
 import sqlite3
+
+DATABASE_PATH = os.getenv("DATABASE_PATH", "links.db")
 
 logger = logging.getLogger("uvicorn")
 
 
 def get_connection():
-    conn = sqlite3.connect("links.db")
+    conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 

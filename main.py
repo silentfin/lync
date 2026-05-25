@@ -43,17 +43,19 @@ class Link(BaseModel):
 
 def generate_short_code():
     conn = get_connection()
-    cursor = conn.cursor()
-    while True:
-        code = "".join(
-            secrets.choice(LOWER_ASCII_CHARACTERS + UPPER_ASCII_CHARACTERS + DIGITS)
-            for _ in range(5)
-        )
-        cursor.execute("select 1 from links where short_code = ?", (code,))
-        if not cursor.fetchone():
-            conn.close()
-            logger.info(f"Generated short code: {code}")
-            return code
+    try:
+        cursor = conn.cursor()
+        while True:
+            code = "".join(
+                secrets.choice(LOWER_ASCII_CHARACTERS + UPPER_ASCII_CHARACTERS + DIGITS)
+                for _ in range(5)
+            )
+            cursor.execute("select 1 from links where short_code = ?", (code,))
+            if not cursor.fetchone():
+                logger.info(f"Generated short code: {code}")
+                return code
+    finally:
+        conn.close()
 
 
 @app.get("/")
@@ -65,85 +67,90 @@ def read_root():
 @app.get("/api/links")
 def list_links():
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("select * from links")
-    rows = cursor.fetchall()
-    if rows:
-        links = {
-            row["short_code"]: {
-                "url": row["url"],
-                "created_at": row["created_at"],
-                "click_count": row["click_count"],
-                "last_accessed_at": row["last_accessed_at"],
+    try:
+        cursor = conn.cursor()
+        cursor.execute("select * from links")
+        rows = cursor.fetchall()
+        if rows:
+            links = {
+                row["short_code"]: {
+                    "url": row["url"],
+                    "created_at": row["created_at"],
+                    "click_count": row["click_count"],
+                    "last_accessed_at": row["last_accessed_at"],
+                }
+                for row in rows
             }
-            for row in rows
-        }
+            return links
+        else:
+            return {}
+    finally:
         conn.close()
-        return links
-    else:
-        return {}
 
 
 @app.get("/{short_code}")
 async def redirect_url(short_code: str):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("select url from links where short_code = ?", (short_code,))
-    row = cursor.fetchone()
-    if row:
-        url = row["url"]
-        cursor.execute(
-            "UPDATE links SET click_count = click_count + 1, last_accessed_at = CURRENT_TIMESTAMP WHERE short_code = ?",
-            (short_code,),
-        )
-        conn.commit()
-        logger.info(f"Update {url} click_count by 1")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("select url from links where short_code = ?", (short_code,))
+        row = cursor.fetchone()
+        if row:
+            url = row["url"]
+            cursor.execute(
+                "UPDATE links SET click_count = click_count + 1, last_accessed_at = CURRENT_TIMESTAMP WHERE short_code = ?",
+                (short_code,),
+            )
+            conn.commit()
+            logger.info(f"Update {url} click_count by 1")
+            return RedirectResponse(url=url)
+        else:
+            logger.warning(f"Short code '{short_code}' not found")
+            raise HTTPException(status_code=404, detail="Invalid URL")
+    finally:
         conn.close()
-        return RedirectResponse(url=url)
-    else:
-        conn.close()
-        logger.warning(f"Short code '{short_code}' not found")
-        raise HTTPException(status_code=404, detail="Invalid URL")
 
 
 @app.get("/{short_code}/stats")
 async def get_stats(short_code: str):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("select * from links where short_code = ?", (short_code,))
-    row = cursor.fetchone()
-    if row:
+    try:
+        cursor = conn.cursor()
+        cursor.execute("select * from links where short_code = ?", (short_code,))
+        row = cursor.fetchone()
+        if row:
+            logger.info(f"Serve {short_code} stats")
+            return row
+        else:
+            logger.warning(f"Short code '{short_code}' not found")
+            raise HTTPException(status_code=404, detail="Invalid URL")
+    finally:
         conn.close()
-        logger.info(f"Serve {short_code} stats")
-        return row
-    else:
-        conn.close()
-        logger.warning(f"Short code '{short_code}' not found")
-        raise HTTPException(status_code=404, detail="Invalid URL")
 
 
 @app.post("/")
 async def shorten_url(link: Link):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "select short_code from links where url = ?",
-        (str(link.url),),
-    )
-    row = cursor.fetchone()
-    if row:
-        link.short_code = row["short_code"]
-        conn.close()
-        logger.info("URL already exists")
-        logger.info(f"Existing short code returned: {link.short_code}")
-        return link
-    else:
-        link.short_code = generate_short_code()
+    try:
+        cursor = conn.cursor()
         cursor.execute(
-            "insert into links (short_code, url) values (?,?)",
-            (link.short_code, str(link.url)),
+            "select short_code from links where url = ?",
+            (str(link.url),),
         )
-        conn.commit()
+        row = cursor.fetchone()
+        if row:
+            link.short_code = row["short_code"]
+            logger.info("URL already exists")
+            logger.info(f"Existing short code returned: {link.short_code}")
+            return link
+        else:
+            link.short_code = generate_short_code()
+            cursor.execute(
+                "insert into links (short_code, url) values (?,?)",
+                (link.short_code, str(link.url)),
+            )
+            conn.commit()
+            logger.info(f"New short code returned: {link.short_code}")
+            return link
+    finally:
         conn.close()
-        logger.info(f"New short code returned: {link.short_code}")
-        return link

@@ -36,7 +36,7 @@ class Link(BaseModel):
     @field_validator("url", mode="before")
     @classmethod
     def add_https(cls, v):
-        if isinstance(v, str) and "://" not in v:
+        if isinstance(v, str) and "://" not in v and ":" not in v:
             return f"https://{v}"
         return v
 

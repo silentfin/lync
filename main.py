@@ -50,7 +50,7 @@ def generate_short_code():
                 secrets.choice(LOWER_ASCII_CHARACTERS + UPPER_ASCII_CHARACTERS + DIGITS)
                 for _ in range(5)
             )
-            cursor.execute("select 1 from links where short_code = ?", (code,))
+            cursor.execute("select 1 from links where short_code = %s", (code,))
             if not cursor.fetchone():
                 logger.info(f"Generated short code: {code}")
                 return code
@@ -93,12 +93,12 @@ async def redirect_url(short_code: str):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("select url from links where short_code = ?", (short_code,))
+        cursor.execute("select url from links where short_code = %s", (short_code,))
         row = cursor.fetchone()
         if row:
             url = row["url"]
             cursor.execute(
-                "UPDATE links SET click_count = click_count + 1, last_accessed_at = CURRENT_TIMESTAMP WHERE short_code = ?",
+                "UPDATE links SET click_count = click_count + 1, last_accessed_at = CURRENT_TIMESTAMP WHERE short_code = %s",
                 (short_code,),
             )
             conn.commit()
@@ -116,7 +116,7 @@ async def get_stats(short_code: str):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("select * from links where short_code = ?", (short_code,))
+        cursor.execute("select * from links where short_code = %s", (short_code,))
         row = cursor.fetchone()
         if row:
             logger.info(f"Serve {short_code} stats")
@@ -134,7 +134,7 @@ async def shorten_url(link: Link):
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "select short_code from links where url = ?",
+            "select short_code from links where url = %s",
             (str(link.url),),
         )
         row = cursor.fetchone()
@@ -146,7 +146,7 @@ async def shorten_url(link: Link):
         else:
             link.short_code = generate_short_code()
             cursor.execute(
-                "insert into links (short_code, url) values (?,?)",
+                "insert into links (short_code, url) values (%s,%s)",
                 (link.short_code, str(link.url)),
             )
             conn.commit()

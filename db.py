@@ -1,15 +1,19 @@
 import logging
 import os
-import sqlite3
 
-DATABASE_PATH = os.getenv("DATABASE_PATH", "links.db")
+import psycopg
+from dotenv import load_dotenv
+from psycopg.rows import dict_row
+
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL", "links.db")
 
 logger = logging.getLogger("uvicorn")
 
 
 def get_connection():
-    conn = sqlite3.connect(DATABASE_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg.connect(DATABASE_URL)
+    conn.row_factory = dict_row
     return conn
 
 
